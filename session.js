@@ -62,10 +62,11 @@ Session.prototype.removeConnection = function(connection){
 }
 
 Session.prototype.broadcastToConnections = function(message){
+  var sender_session = this.sessions[message.session_id];
   for(var sid in this.sessions){
     if(this.sessions.hasOwnProperty(sid)){
       var c = this.sessions[sid];
-      c.connection.sendUTF(message);
+      c.connection.sendUTF(JSON.stringify({message:message.message, user: sender_session.user}));
     }
   }
 }

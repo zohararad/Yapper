@@ -5,10 +5,10 @@ section#login
       input#screen_name(type='text', name='screen_name', placeholder='Enter chat screen name')
       input#start_chat(type='submit', name='login', value='Start Yapping')
       
-section#chat
-  h1 Let's Yap
+section#chat.inactive
   div#chat_messages
   aside#chat_users
+    h2 Chat Users
   p
     textarea#chat_message(rows=10, cols=60, name='chat_message')
     input#send_message(type='button', value='Send')

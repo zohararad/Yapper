@@ -95,10 +95,9 @@ wsServer.on('request', function(request) {
   // Handle incoming message
   connection.on('message', function(message) {
     if (message.type === 'utf8') {
-      var msg = message.utf8Data;
-      if(/session_id/.test(msg)){
-        var o = JSON.parse(msg);
-        session.addConnection(connection, o.session_id);
+      var msg = JSON.parse(message.utf8Data);
+      if(msg.action === 'start_session'){
+        session.addConnection(connection, msg.session_id);
       } else {
         session.broadcastToConnections(msg);
       }

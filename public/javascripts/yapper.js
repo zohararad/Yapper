@@ -16,7 +16,12 @@ var Yapper = {
         login:document.id('login'),
         chat:document.id('chat')
       },
-      chat_users:document.id('chat_users')
+      chat:{
+        send:document.id('send_message'),
+        message:document.id('chat_message'),
+        messages:document.id('chat_messages'),
+        users:document.id('chat_users')
+      }
     }
   },
   /**
@@ -43,29 +48,18 @@ var Yapper = {
         this.addUserToUserList(s);
       }
     }
+    this.dom.sections.login.addClass('inactive');
+    this.dom.sections.chat.addClass('active').removeClass('inactive');
     this.connectToChatService(this.session_id);
     this.subscribeToChatUsersUpdate();
   },
   /**
    * Connects to WS chat service and initiates chat message sending on page
-   * @param {String} session_id - current user's session ID
    */
-  connectToChatService:function(session_id){
-    var send_message = document.id('send_message');
-    var chat_message = document.id('chat_message');
-    var chat_messages = document.id('chat_messages');
-    
-    var conn = new (window['WebSocket'] || window['MozWebSocket'])("ws://localhost:3000",'yapper-chat-service');
-    conn.onmessage = function(evt) {
-      new Element('p').set('text',evt.data).inject(chat_messages,'top');
-      chat_message.value = '';
-    };
-    conn.onopen = function () {
-      send_message.addEvent('click',function(){
-        conn.send(chat_message.value);
-      });
-      conn.send(JSON.stringify({session_id:session_id})); //let server know we're connected to a chat session
-    };
+  connectToChatService:function(){
+    this.ws_conn = new (window['WebSocket'] || window['MozWebSocket'])("ws://localhost:3000",'yapper-chat-service');
+    this.ws_conn.onmessage = this.addChatMessage.bind(this);
+    this.ws_conn.onopen = this.enableChat.bind(this);
   },
   /**
    * Subscribe to chat users add / remove SSE service
@@ -83,6 +77,14 @@ var Yapper = {
     
     source.addEventListener('added', this.addChatUser.bind(this), false);
     source.addEventListener('removed', this.removeChatUser.bind(this), false);
+  },
+  /**
+   * Enable chat on page. Add send message events and send message to chat server that chat session has started
+   */
+  enableChat:function(){
+    this.dom.chat.send.addEvent('click',this.sendChatMessage.bind(this));
+    this.dom.chat.message.addEvent('keydown',this.sendChatMessage.bind(this));
+    this.ws_conn.send(JSON.stringify({action:'start_session',session_id:this.session_id})); //let server know we're connected to a chat session
   },
   /**
    * Callback for chat user added server-side event
@@ -112,6 +114,25 @@ var Yapper = {
       'class':(this.session_id === data.session_id ? 'me' : ''),
       'id':data.session_id
     }).set('html',data.user);
-    this.dom.chat_users.adopt(el);
+    this.dom.chat.users.adopt(el);
+  },
+  /**
+   * Add a received chat message to chat messages window
+   * @param {WebSocketEvent} e - WS message event
+   */
+  addChatMessage:function(e){
+    var data = JSON.parse(e.data);
+    new Element('p',{'class':'message'}).set('html','<strong>'+data.user+'</strong>:&nbsp;<span>'+data.message+'</span>').inject(this.dom.chat.messages);
+    this.dom.chat.message.value = '';
+  },
+  /**
+   * Sends a chat message to chat server
+   * @param {DOMEvent} e - send message DOM event
+   */
+  sendChatMessage:function(e){
+    if((e.type === 'keydown' && e.key === 'enter' && !e.shift) || e.type === 'click'){
+      var msg = {action:'send_message', session_id:this.session_id, message: this.dom.chat.message.value};
+      this.ws_conn.send(JSON.stringify(msg));
+    }
   }
 }
