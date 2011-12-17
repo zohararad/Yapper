@@ -35,59 +35,22 @@ var Yapper = {
    */
   onLogin:function(response){
     var data = JSON.parse(response);
+    this.session_id = data.session_id;
     for(var sid in data.session_data){
       if(data.session_data.hasOwnProperty(sid)){
         var s = data.session_data[sid];
-        var el = new Element('p',{
-          'class':(sid === data.session_id ? 'me' : ''),
-          'id':sid
-        }).set('html',s.user);
-        this.dom.chat_users.adopt(el);
+        s.session_id = sid;
+        this.addUserToUserList(s);
       }
     }
-    WS.connect(data.session_id);
-    SSE.connect();
-  }
-}
-
-/**
- * Server-Side Events object - manages chat users add / remove
- */
-var SSE = {
+    this.connectToChatService(this.session_id);
+    this.subscribeToChatUsersUpdate();
+  },
   /**
-   * Connect to chat users update service
+   * Connects to WS chat service and initiates chat message sending on page
+   * @param {String} session_id - current user's session ID
    */
-  connect:function(){
-    var source = new EventSource('http://localhost:3000/connected_users');
-    source.addEventListener('open', function(e) {
-    }.bind(this), false);
-
-    source.addEventListener('close', function(e) {
-    }, false);
-
-    source.addEventListener('error', function(e) {
-      if (e.eventPhase == EventSource.CLOSED) {
-      // Connection was closed.
-      }
-    }, false);
-    
-    source.addEventListener('added', function(e) {
-    }.bind(this), false);
-    
-    source.addEventListener('removed', function(e) {
-    }.bind(this), false);
-  }
-}
-
-/**
- * WebSockets manager - sends chat messages to all yappers
- */
-var WS = {
-  /**
-   * Connects to server-side WS chat service
-   * @param {String} session_id - current user's session_id on chat server
-   */
-  connect:function(session_id){
+  connectToChatService:function(session_id){
     var send_message = document.id('send_message');
     var chat_message = document.id('chat_message');
     var chat_messages = document.id('chat_messages');
@@ -103,5 +66,52 @@ var WS = {
       });
       conn.send(JSON.stringify({session_id:session_id})); //let server know we're connected to a chat session
     };
+  },
+  /**
+   * Subscribe to chat users add / remove SSE service
+   */
+  subscribeToChatUsersUpdate:function(){
+    var source = new EventSource('http://localhost:3000/connected_users');
+    
+    source.addEventListener('open', function(e) {
+      console.log('Chat Users Update Service Ready');
+    }.bind(this), false);
+
+    source.addEventListener('close', function(e) {
+      console.log('Chat Users Update Service Closed');
+    }, false);
+    
+    source.addEventListener('added', this.addChatUser.bind(this), false);
+    source.addEventListener('removed', this.removeChatUser.bind(this), false);
+  },
+  /**
+   * Callback for chat user added server-side event
+   * Adds user to chat users list
+   * @param {ServerSideEvent} e - chat user add event
+   */
+  addChatUser:function(e){
+    var data = JSON.parse(e.data);
+    this.addUserToUserList(data);
+  },
+  /**
+   * Callback for chat user removed server-side event
+   * Removes user from chat users list
+   * @param {ServerSideEvent} e - chat user remove event
+   */
+  removeChatUser:function(e){
+    var data = JSON.parse(e.data);
+    var p = document.id(data.session_id);
+    p.dispose();
+  },
+  /**
+   * Adds a user to the DOM chat users list
+   * @param {Object} data - user data (name and session id)
+   */
+  addUserToUserList:function(data){
+    var el = new Element('p',{
+      'class':(this.session_id === data.session_id ? 'me' : ''),
+      'id':data.session_id
+    }).set('html',data.user);
+    this.dom.chat_users.adopt(el);
   }
 }
