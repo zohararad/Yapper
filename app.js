@@ -47,19 +47,32 @@ app.post('/chat', function(req, res){
   });
 });
 
+var sse_responses = [];
+session.on('create',function(user_session){
+  sse_responses.forEach(function(res){
+    res.write("event: added\n");
+    res.write("data:"+JSON.stringify(user_session)+"\n\n");
+  });
+});
+
+session.on('destroy',function(user_session){
+  sse_responses.forEach(function(res){
+    res.write("event: removed\n");
+    res.write("data:"+JSON.stringify(user_session)+"\n\n");
+  });
+});
+
 app.get('/connected_users', function(req, res){
   res.header('Content-Type','text/event-stream');
   res.header('Cache-Control', 'no-cache');
   res.header('Connection', 'keep-alive');
 
-  session.on('create',function(user_session){
-    res.write("event: added\n");
-    res.write("data:"+JSON.stringify(user_session)+"\n\n");
-  });
-  
-  session.on('destroy',function(user_session){
-    res.write("event: removed\n");
-    res.write("data:"+JSON.stringify(user_session)+"\n\n");
+  sse_responses.push(res);
+  req.on('close',function(){
+    var index = sse_responses.indexOf(res);
+    if(index > -1){
+      sse_responses.splice(index,1);
+    }
   });
 });
 
