@@ -53,14 +53,11 @@ app.get('/connected_users', function(req, res){
   res.header('Connection', 'keep-alive');
 
   session.on('create',function(user_session){
-    console.log('user added',user_session);
-    
     res.write("event: added\n");
     res.write("data:"+JSON.stringify(user_session)+"\n\n");
   });
   
   session.on('destroy',function(user_session){
-    console.log('user removed',user_session);
     res.write("event: removed\n");
     res.write("data:"+JSON.stringify(user_session)+"\n\n");
   });
@@ -78,38 +75,23 @@ var wsServer = new WebSocketServer({
 
 wsServer.on('request', function(request) {
   var connection = request.accept('yapper-chat-service', request.origin); //new connection, accepting requests only on 'yapper-chat-service'
-  //connections.push(connection); //store reference to new connection
-  console.log((new Date()) + " WS Connection accepted.");
   
   // Handle incoming message
   connection.on('message', function(message) {
     if (message.type === 'utf8') {
       var msg = message.utf8Data;
-      console.log("WS Received Message: " + msg);
       if(/session_id/.test(msg)){
         var o = JSON.parse(msg);
         session.addConnection(connection, o.session_id);
       } else {
         session.broadcastToConnections(msg);
       }
-      // Broadcast message to all existing connections
-      //connections.forEach(function(destination) {
-      //  destination.sendUTF(message.utf8Data);
-      //});
     }
   });
   
   // Handle closed connections
   connection.on('close', function() {
     session.removeConnection(connection);
-    /*
-    var index = connections.indexOf(connection);
-    if (index !== -1) {
-      // remove the connection from the pool
-      connections.splice(index, 1);
-    }
-    console.log(connection.remoteAddress + " disconnected");
-    */
   });
   
   // Handle connection error

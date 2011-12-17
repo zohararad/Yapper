@@ -46,7 +46,6 @@ Session.prototype.destroy = function(session_id) {
 }
 
 Session.prototype.addConnection = function(connection, session_id){
-  console.log(session_id,this.sessions[session_id]);
   this.sessions[session_id]['connection'] = connection;
 }
 
