@@ -1,6 +1,14 @@
-h1 Welcome to Yapper!
-
-form#chat_login(action='/chat', method='post')
+section#login
+  h1 Welcome to Yapper!
+  form#chat_login_form(action='/chat', method='post')
+    p
+      input#screen_name(type='text', name='screen_name', placeholder='Enter chat screen name')
+      input#start_chat(type='submit', name='login', value='Start Yapping')
+      
+section#chat
+  h1 Let's Yap
+  div#chat_messages
+  aside#chat_users
   p
-    input#screen_name(type='text', name='screen_name', placeholder='Enter chat screen name')
-    input#start_chat(type='submit', name='send', value='Start Yapping')
+    textarea#chat_message(rows=10, cols=60, name='chat_message')
+    input#send_message(type='button', value='Send')

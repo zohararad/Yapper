@@ -2,6 +2,10 @@
 html
   head
     title Yapper - HTML5 Communication Demo
-    link(rel='stylesheet', href='/stylesheets/style.css')
+    link(rel='stylesheet', href='/stylesheets/styles.css')
   body
     div#content!= body
+  script(src='/javascripts/mootools-core-1.4.2-full-nocompat-yc.js')
+  script(src='/javascripts/yapper.js')
+  script
+    Yapper.start();
