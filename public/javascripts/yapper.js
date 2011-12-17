@@ -3,6 +3,7 @@ var Yapper = {
    * Start Yapper
    */
   start:function(){
+    this.base_url = self.location.host;
     this.bindDOM();
     this.bindEvents();
   },
@@ -57,7 +58,7 @@ var Yapper = {
    * Connects to WS chat service and initiates chat message sending on page
    */
   connectToChatService:function(){
-    this.ws_conn = new (window['WebSocket'] || window['MozWebSocket'])("ws://localhost:3000",'yapper-chat-service');
+    this.ws_conn = new (window['WebSocket'] || window['MozWebSocket'])("ws://"+this.base_url,'yapper-chat-service');
     this.ws_conn.onmessage = this.addChatMessage.bind(this);
     this.ws_conn.onopen = this.enableChat.bind(this);
   },
@@ -65,7 +66,7 @@ var Yapper = {
    * Subscribe to chat users add / remove SSE service
    */
   subscribeToChatUsersUpdate:function(){
-    var source = new EventSource('http://localhost:3000/connected_users');
+    var source = new EventSource('http://'+this.base_url+'/connected_users');
     
     source.addEventListener('open', function(e) {
       console.log('Chat Users Update Service Ready');
