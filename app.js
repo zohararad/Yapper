@@ -6,6 +6,9 @@ var app = module.exports = express.createServer();
 var Session = require('./session');
 var session = new Session();
 
+//sse responses collection
+var sse_responses = [];
+
 /** CORS middleware **/
 var allowCrossDomain = function(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');
@@ -47,21 +50,6 @@ app.post('/chat', function(req, res){
   });
 });
 
-var sse_responses = [];
-session.on('create',function(user_session){
-  sse_responses.forEach(function(res){
-    res.write("event: added\n");
-    res.write("data:"+JSON.stringify(user_session)+"\n\n");
-  });
-});
-
-session.on('destroy',function(user_session){
-  sse_responses.forEach(function(res){
-    res.write("event: removed\n");
-    res.write("data:"+JSON.stringify(user_session)+"\n\n");
-  });
-});
-
 app.get('/connected_users', function(req, res){
   res.header('Content-Type','text/event-stream');
   res.header('Cache-Control', 'no-cache');
@@ -73,6 +61,21 @@ app.get('/connected_users', function(req, res){
     if(index > -1){
       sse_responses.splice(index,1);
     }
+  });
+});
+
+/** Register session create / remove event handling **/
+session.on('create',function(user_session){
+  sse_responses.forEach(function(res){
+    res.write("event: added\n");
+    res.write("data:"+JSON.stringify(user_session)+"\n\n");
+  });
+});
+
+session.on('destroy',function(user_session){
+  sse_responses.forEach(function(res){
+    res.write("event: removed\n");
+    res.write("data:"+JSON.stringify(user_session)+"\n\n");
   });
 });
 
